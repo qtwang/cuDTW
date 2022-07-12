@@ -57,6 +57,8 @@ int main(int argc, char *argv[])
         dist_filepath = argv[4];
     }
 
+    std::cout << db_filepath << " " << num_features << " " << num_entries << " " << dist_filepath << std::endl;
+
     // choose whether this is a database query (0) or stream query (>0)
     const uint8_t query_type = DATABASE; // STREAM;
 
@@ -144,19 +146,22 @@ int main(int argc, char *argv[])
     TIMERSTART_CUDA(streamed_computation)
     for (index_t query_id = 0; query_id < num_entries - 1; ++query_id)
     {
+        auto num_entries_local = num_entries - 1 - query_id;
+
         auto query_offset = query_id * num_features;
-        auto num_entries_local = num_entries - query_id;
-        auto data_cpu_local = data_cpu + query_offset;
+        auto query_cpu_local = data_cpu + query_offset;
+        auto data_cpu_local = query_cpu_local + num_features;
+
         auto dist_cpu_local = dist_cpu;
-        for (index_t num_dist = num_entries - 1; num_dist > num_entries - query_id; --num_dist)
+        for (index_t query_id_local = 0; query_id_local < query_id; ++query_id_local)
         {
-            dist_cpu_local += num_dist;
+            dist_cpu_local += num_entries - 1 - query_id_local;
         }
 
         for (index_t gpu = 0; gpu < num_gpus; gpu++)
         {
             cudaSetDevice(gpu);
-            cudaMemcpyToSymbol(cQuery, data_cpu_local,
+            cudaMemcpyToSymbol(cQuery, query_cpu_local,
                                sizeof(value_t) * num_features * num_queries);
         }
         CUERR
