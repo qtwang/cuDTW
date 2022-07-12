@@ -4,3 +4,8 @@
 *.ptx
 *.cubin
 *.fatbin
+
+.vscode
+*.bin
+main
+pairwise
